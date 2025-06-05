@@ -2,6 +2,10 @@
 
 A comprehensive CI/CD Review Automation Tool built with Go, GitHub Actions, and Docker. This bot automatically runs checks, enforces merge policies, provides latency statistics, and integrates with third-party services to reduce manual intervention by 60%.
 
+## 🔗 Project Link  
+[Click here to view the project](https://ci-cd-git-hub-review-bot.vercel.app/)
+
+
 ## Features
 
 ### 🤖 Automated Code Reviews
