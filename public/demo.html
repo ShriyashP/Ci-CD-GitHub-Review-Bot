@@ -1,0 +1,487 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>GitHub Review Bot Dashboard</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+
+        .header {
+            text-align: center;
+            color: white;
+            margin-bottom: 40px;
+        }
+
+        .header h1 {
+            font-size: 3rem;
+            margin-bottom: 10px;
+        }
+
+        .header p {
+            font-size: 1.2rem;
+            opacity: 0.9;
+        }
+
+        .status-bar {
+            background: rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(10px);
+            border-radius: 15px;
+            padding: 20px;
+            margin-bottom: 30px;
+            border: 1px solid rgba(255, 255, 255, 0.2);
+        }
+
+        .status-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 20px;
+        }
+
+        .status-item {
+            text-align: center;
+            color: white;
+        }
+
+        .status-value {
+            font-size: 2.5rem;
+            font-weight: bold;
+            margin-bottom: 5px;
+        }
+
+        .status-label {
+            font-size: 0.9rem;
+            opacity: 0.8;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        .cards-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(350px, 1fr));
+            gap: 25px;
+        }
+
+        .card {
+            background: rgba(255, 255, 255, 0.95);
+            border-radius: 20px;
+            padding: 30px;
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.3);
+        }
+
+        .card h3 {
+            color: #333;
+            margin-bottom: 20px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .icon {
+            font-size: 1.5rem;
+        }
+
+        .metric {
+            display: flex;
+            justify-content: space-between;
+            padding: 12px 0;
+            border-bottom: 1px solid #eee;
+        }
+
+        .metric:last-child {
+            border-bottom: none;
+        }
+
+        .metric-label {
+            color: #666;
+            font-weight: 500;
+        }
+
+        .metric-value {
+            color: #333;
+            font-weight: bold;
+        }
+
+        .recent-activity {
+            max-height: 300px;
+            overflow-y: auto;
+        }
+
+        .activity-item {
+            padding: 15px;
+            margin-bottom: 10px;
+            background: #f8f9fa;
+            border-radius: 10px;
+            border-left: 4px solid #667eea;
+        }
+
+        .activity-time {
+            font-size: 0.8rem;
+            color: #666;
+            margin-bottom: 5px;
+        }
+
+        .activity-description {
+            color: #333;
+            font-weight: 500;
+        }
+
+        .check-status {
+            display: inline-block;
+            padding: 4px 12px;
+            border-radius: 20px;
+            font-size: 0.8rem;
+            font-weight: bold;
+            text-transform: uppercase;
+        }
+
+        .status-success {
+            background: #d4edda;
+            color: #155724;
+        }
+
+        .status-warning {
+            background: #fff3cd;
+            color: #856404;
+        }
+
+        .status-failure {
+            background: #f8d7da;
+            color: #721c24;
+        }
+
+        .status-pending {
+            background: #d1ecf1;
+            color: #0c5460;
+        }
+
+        .live-indicator {
+            display: inline-block;
+            width: 10px;
+            height: 10px;
+            background: #28a745;
+            border-radius: 50%;
+            animation: pulse 2s infinite;
+            margin-right: 10px;
+        }
+
+        @keyframes pulse {
+            0% { opacity: 1; }
+            50% { opacity: 0.5; }
+            100% { opacity: 1; }
+        }
+
+        .endpoints {
+            margin-top: 30px;
+            padding: 20px;
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 15px;
+            color: white;
+        }
+
+        .endpoint-item {
+            margin: 10px 0;
+            padding: 10px;
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 8px;
+            font-family: monospace;
+        }
+
+        .refresh-btn {
+            position: fixed;
+            bottom: 30px;
+            right: 30px;
+            background: #667eea;
+            color: white;
+            border: none;
+            padding: 15px 20px;
+            border-radius: 50px;
+            cursor: pointer;
+            font-weight: bold;
+            box-shadow: 0 10px 20px rgba(0, 0, 0, 0.2);
+            transition: transform 0.2s;
+        }
+
+        .refresh-btn:hover {
+            transform: translateY(-2px);
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🤖 GitHub Review Bot (Demo)</h1>
+            <p><span class="live-indicator"></span>CI/CD Automation Dashboard - Live Status</p>
+        </div>
+
+        <div class="status-bar">
+            <div class="status-grid">
+                <div class="status-item">
+                    <div class="status-value" id="totalPRs">0</div>
+                    <div class="status-label">PRs Processed</div>
+                </div>
+                <div class="status-item">
+                    <div class="status-value" id="totalChecks">0</div>
+                    <div class="status-label">Checks Run</div>
+                </div>
+                <div class="status-item">
+                    <div class="status-value" id="avgTime">0ms</div>
+                    <div class="status-label">Avg Processing</div>
+                </div>
+                <div class="status-item">
+                    <div class="status-value" id="uptime">0s</div>
+                    <div class="status-label">Uptime</div>
+                </div>
+            </div>
+        </div>
+
+        <div class="cards-grid">
+            <div class="card">
+                <h3><span class="icon">📊</span>Performance Metrics</h3>
+                <div class="metric">
+                    <span class="metric-label">Test Check Avg Time</span>
+                    <span class="metric-value" id="testTime">-</span>
+                </div>
+                <div class="metric">
+                    <span class="metric-label">Lint Check Avg Time</span>
+                    <span class="metric-value" id="lintTime">-</span>
+                </div>
+                <div class="metric">
+                    <span class="metric-label">Build Check Avg Time</span>
+                    <span class="metric-value" id="buildTime">-</span>
+                </div>
+                <div class="metric">
+                    <span class="metric-label">Security Check Avg Time</span>
+                    <span class="metric-value" id="securityTime">-</span>
+                </div>
+                <div class="metric">
+                    <span class="metric-label">Manual Intervention Reduction</span>
+                    <span class="metric-value">60%</span>
+                </div>
+            </div>
+
+            <div class="card">
+                <h3><span class="icon">🔄</span>Recent Activity</h3>
+                <div class="recent-activity" id="recentActivity">
+                    <div class="activity-item">
+                        <div class="activity-time">2 minutes ago</div>
+                        <div class="activity-description">
+                            PR #42 processed - <span class="check-status status-success">All Checks Passed</span>
+                        </div>
+                    </div>
+                    <div class="activity-item">
+                        <div class="activity-time">5 minutes ago</div>
+                        <div class="activity-description">
+                            PR #41 processed - <span class="check-status status-warning">Needs Review</span>
+                        </div>
+                    </div>
+                    <div class="activity-item">
+                        <div class="activity-time">12 minutes ago</div>
+                        <div class="activity-description">
+                            PR #40 processed - <span class="check-status status-failure">Tests Failed</span>
+                        </div>
+                    </div>
+                    <div class="activity-item">
+                        <div class="activity-time">18 minutes ago</div>
+                        <div class="activity-description">
+                            PR #39 processed - <span class="check-status status-success">Ready to Merge</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="card">
+                <h3><span class="icon">⚙️</span>Configuration</h3>
+                <div class="metric">
+                    <span class="metric-label">Min Required Reviewers</span>
+                    <span class="metric-value">2</span>
+                </div>
+                <div class="metric">
+                    <span class="metric-label">Required Checks</span>
+                    <span class="metric-value">4</span>
+                </div>
+                <div class="metric">
+                    <span class="metric-label">Third-party Integrations</span>
+                    <span class="metric-value">Active</span>
+                </div>
+                <div class="metric">
+                    <span class="metric-label">Webhook Status</span>
+                    <span class="metric-value">✅ Connected</span>
+                </div>
+                <div class="metric">
+                    <span class="metric-label">Auto-merge Enabled</span>
+                    <span class="metric-value">Yes</span>
+                </div>
+            </div>
+
+            <div class="card">
+                <h3><span class="icon">🔗</span>Third-party Integrations</h3>
+                <div class="metric">
+                    <span class="metric-label">Slack Notifications</span>
+                    <span class="metric-value">✅ Active</span>
+                </div>
+                <div class="metric">
+                    <span class="metric-label">JIRA Integration</span>
+                    <span class="metric-value">✅ Connected</span>
+                </div>
+                <div class="metric">
+                    <span class="metric-label">Custom Webhooks</span>
+                    <span class="metric-value">2 Active</span>
+                </div>
+                <div class="metric">
+                    <span class="metric-label">Processing Reduction</span>
+                    <span class="metric-value">60% ⬇️</span>
+                </div>
+            </div>
+        </div>
+
+        <div class="endpoints">
+            <h3>🔌 API Endpoints</h3>
+            <div class="endpoint-item">POST /webhook - GitHub webhook receiver</div>
+            <div class="endpoint-item">GET /stats - Performance statistics</div>
+            <div class="endpoint-item">GET /health - Health check endpoint</div>
+            <div class="endpoint-item">GET / - This dashboard</div>
+        </div>
+    </div>
+
+    <button class="refresh-btn" onclick="refreshData()">🔄 Refresh</button>
+
+    <script>
+        let statsData = {
+            total_prs_processed: 0,
+            total_checks_run: 0,
+            avg_pr_processing_time: "0s",
+            uptime: "0s",
+            check_run_times: {}
+        };
+
+        async function fetchStats() {
+            try {
+                const response = await fetch('/stats');
+                if (response.ok) {
+                    statsData = await response.json();
+                    updateDashboard();
+                } else {
+                    // Simulate data for demo
+                    simulateData();
+                }
+            } catch (error) {
+                console.log('Using demo data');
+                simulateData();
+            }
+        }
+
+        function simulateData() {
+            statsData = {
+                total_prs_processed: Math.floor(Math.random() * 150) + 50,
+                total_checks_run: Math.floor(Math.random() * 600) + 200,
+                avg_pr_processing_time: `${Math.floor(Math.random() * 5000) + 1000}ms`,
+                uptime: "2h 45m 30s",
+                check_run_times: {
+                    test: `${Math.floor(Math.random() * 200) + 100}ms`,
+                    lint: `${Math.floor(Math.random() * 100) + 50}ms`,
+                    build: `${Math.floor(Math.random() * 300) + 150}ms`,
+                    security: `${Math.floor(Math.random() * 250) + 100}ms`
+                }
+            };
+            updateDashboard();
+        }
+
+        function updateDashboard() {
+            document.getElementById('totalPRs').textContent = statsData.total_prs_processed || 0;
+            document.getElementById('totalChecks').textContent = statsData.total_checks_run || 0;
+            document.getElementById('avgTime').textContent = statsData.avg_pr_processing_time || "0ms";
+            document.getElementById('uptime').textContent = statsData.uptime || "0s";
+
+            if (statsData.check_run_times) {
+                document.getElementById('testTime').textContent = statsData.check_run_times.test || "-";
+                document.getElementById('lintTime').textContent = statsData.check_run_times.lint || "-";
+                document.getElementById('buildTime').textContent = statsData.check_run_times.build || "-";
+                document.getElementById('securityTime').textContent = statsData.check_run_times.security || "-";
+            }
+        }
+
+        function refreshData() {
+            const btn = document.querySelector('.refresh-btn');
+            btn.textContent = '⏳ Refreshing...';
+            
+            fetchStats().then(() => {
+                btn.textContent = '🔄 Refresh';
+            });
+        }
+
+        function addRecentActivity() {
+            const activities = [
+                { time: "Just now", desc: "PR #43 processed", status: "success", text: "All Checks Passed" },
+                { time: "1 minute ago", desc: "PR #42 processed", status: "warning", text: "Needs Review" },
+                { time: "3 minutes ago", desc: "PR #41 processed", status: "failure", text: "Tests Failed" },
+                { time: "7 minutes ago", desc: "PR #40 processed", status: "success", text: "Ready to Merge" }
+            ];
+
+            const activity = activities[Math.floor(Math.random() * activities.length)];
+            const activityHtml = `
+                <div class="activity-item" style="animation: slideIn 0.5s ease-out;">
+                    <div class="activity-time">${activity.time}</div>
+                    <div class="activity-description">
+                        ${activity.desc} - <span class="check-status status-${activity.status}">${activity.text}</span>
+                    </div>
+                </div>
+            `;
+
+            const activityContainer = document.getElementById('recentActivity');
+            activityContainer.insertAdjacentHTML('afterbegin', activityHtml);
+            
+            // Remove old activities to keep list manageable
+            const items = activityContainer.children;
+            if (items.length > 6) {
+                items[items.length - 1].remove();
+            }
+        }
+
+        // Initialize dashboard
+        document.addEventListener('DOMContentLoaded', function() {
+            fetchStats();
+            
+            // Auto-refresh every 30 seconds
+            setInterval(fetchStats, 30000);
+            
+            // Add new activity every 2-5 minutes (for demo)
+            setInterval(addRecentActivity, Math.random() * 180000 + 120000);
+        });
+
+        // Add CSS animation for sliding in new activities
+        const style = document.createElement('style');
+        style.textContent = `
+            @keyframes slideIn {
+                from {
+                    opacity: 0;
+                    transform: translateX(-20px);
+                }
+                to {
+                    opacity: 1;
+                    transform: translateX(0);
+                }
+            }
+        `;
+        document.head.appendChild(style);
+    </script>
+</body>
+</html>
