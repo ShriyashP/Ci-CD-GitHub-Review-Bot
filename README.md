@@ -35,17 +35,3 @@ A comprehensive CI/CD Review Automation Tool built with Go, GitHub Actions, and 
 - **Security Scanning**: Integrated security checks with Gosec and Trivy
 - **High Availability**: Health checks and graceful shutdown
 
-## Contributing
-
-1. Fork the repository
-2. Create a feature branch
-3. Make your changes
-4. Add tests
-5. Run the full test suite
-6. Submit a pull request
-
-## License
-
-MIT License - see LICENSE file for details.
-
-## Work in Progress ......!!!!
